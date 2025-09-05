@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ToastContext } from "./ToastContextBase";
+import { ToastContext } from "./useToast";
 
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
