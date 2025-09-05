@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast';
 import { detectionService } from '../services/detectionService';
 import { Calendar, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 

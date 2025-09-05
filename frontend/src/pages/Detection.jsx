@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast';
 import { detectionService } from '../services/detectionService';
 import { Camera, Upload, X, AlertTriangle, CheckCircle, Loader } from 'lucide-react';
 

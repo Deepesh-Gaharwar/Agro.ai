@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast';
 import { detectionService } from '../services/detectionService';
 import { Camera, History, TrendingUp, AlertTriangle, CheckCircle, BarChart3 } from 'lucide-react';
 

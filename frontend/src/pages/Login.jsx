@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast';
 import { Leaf, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
