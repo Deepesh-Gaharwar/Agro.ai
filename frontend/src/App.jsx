@@ -10,6 +10,7 @@ import Detection from './pages/Detection';
 import History from './pages/History';
 import Profile from './pages/Profile';
 import './index.css';
+import Layout from "./components/Layout";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -54,75 +55,72 @@ const AppContent = () => {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <main className="container mx-auto px-4 py-8">
-          <Routes>
-            {/* Public Routes */}
-            <Route 
-              path="/login" 
-              element={
-                <PublicRoute>
-                  <Login />
-                </PublicRoute>
-              } 
-            />
-            <Route 
-              path="/register" 
-              element={
-                <PublicRoute>
-                  <Register />
-                </PublicRoute>
-              } 
-            />
+      <Routes>
+        {/* Public Routes */}
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          }
+        />
 
-            {/* Protected Routes */}
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/detection" 
-              element={
-                <ProtectedRoute>
-                  <Detection />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/history" 
-              element={
-                <ProtectedRoute>
-                  <History />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/profile" 
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              } 
-            />
+        {/* Protected Routes inside Layout */}
+        <Route element={<Layout />}>
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/detection"
+            element={
+              <ProtectedRoute>
+                <Detection />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <ProtectedRoute>
+                <History />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
 
-            {/* Default redirect */}
-            <Route
-              path="/"
-              element={
-                <Navigate
-                  to={isAuthenticated ? "/dashboard" : "/login"}
-                  replace
-                />
-              }
+        {/* Default redirect */}
+        <Route
+          path="/"
+          element={
+            <Navigate
+              to={isAuthenticated ? "/dashboard" : "/login"}
+              replace
             />
-          </Routes>
-        </main>
-      </div>
+          }
+        />
+      </Routes>
     </Router>
   );
 };

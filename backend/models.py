@@ -1,64 +1,70 @@
-from flask_sqlalchemy import SQLAlchemy
+from mongoengine import (
+    Document, StringField, EmailField, BooleanField,
+    FloatField, DateTimeField, ReferenceField, ListField, CASCADE
+)
 from datetime import datetime
 
-db = SQLAlchemy()
+# --------------------
+# User Model
+# --------------------
+class User(Document):
+    meta = {'collection': 'users'}
+    
+    username = StringField(required=True, unique=True, max_length=80)
+    email = EmailField(required=True, unique=True, max_length=120)
+    password_hash = StringField(required=True, max_length=255)
+    created_at = DateTimeField(default=datetime.utcnow)
+    updated_at = DateTimeField(default=datetime.utcnow)
 
-class User(db.Model):
-    __tablename__ = 'users'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relationships
-    detections = db.relationship('Detection', backref='user', lazy=True, cascade='all, delete-orphan')
-    
     def __repr__(self):
-        return f'<User {self.username}>'
+        return f"<User {self.username}>"
 
-class Plant(db.Model):
-    __tablename__ = 'plants'
+# --------------------
+# Plant Model
+# --------------------
+class Plant(Document):
+    meta = {'collection': 'plants'}
     
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    scientific_name = db.Column(db.String(150), nullable=True)
-    common_diseases = db.Column(db.Text, nullable=True)  # Comma-separated disease names
-    description = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    def __repr__(self):
-        return f'<Plant {self.name}>'
+    name = StringField(required=True, max_length=100)
+    scientific_name = StringField(max_length=150)
+    common_diseases = ListField(StringField())  # store as list instead of comma-separated
+    description = StringField()
+    created_at = DateTimeField(default=datetime.utcnow)
 
-class Detection(db.Model):
-    __tablename__ = 'detections'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    image_path = db.Column(db.String(255), nullable=False)
-    disease_detected = db.Column(db.Boolean, nullable=False, default=False)
-    confidence_score = db.Column(db.Float, nullable=False, default=0.0)
-    disease_type = db.Column(db.String(100), nullable=True)
-    severity_level = db.Column(db.String(50), nullable=True)  # Low, Medium, High
-    treatment_recommendation = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
     def __repr__(self):
-        return f'<Detection {self.id} - Disease: {self.disease_detected}>'
+        return f"<Plant {self.name}>"
 
-class DiseaseInfo(db.Model):
-    __tablename__ = 'disease_info'
+# --------------------
+# Detection Model
+# --------------------
+class Detection(Document):
+    meta = {'collection': 'detections'}
     
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False, unique=True)
-    description = db.Column(db.Text, nullable=True)
-    symptoms = db.Column(db.Text, nullable=True)
-    treatment = db.Column(db.Text, nullable=True)
-    prevention = db.Column(db.Text, nullable=True)
-    affected_plants = db.Column(db.Text, nullable=True)  # Comma-separated plant names
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+    user = ReferenceField(User, reverse_delete_rule=CASCADE, required=True)
+    image_path = StringField(required=True, max_length=255)
+    disease_detected = BooleanField(default=False)
+    confidence_score = FloatField(default=0.0)
+    disease_type = StringField(max_length=100)
+    severity_level = StringField(max_length=50)  # Low, Medium, High
+    treatment_recommendation = StringField()
+    created_at = DateTimeField(default=datetime.utcnow)
+
     def __repr__(self):
-        return f'<DiseaseInfo {self.name}>'
+        return f"<Detection {self.id} - Disease: {self.disease_detected}>"
+
+# --------------------
+# DiseaseInfo Model
+# --------------------
+class DiseaseInfo(Document):
+    meta = {'collection': 'disease_info'}
+    
+    name = StringField(required=True, unique=True, max_length=100)
+    description = StringField()
+    symptoms = StringField()
+    treatment = StringField()
+    prevention = StringField()
+    affected_plants = ListField(StringField())  # store as list of plant names
+    created_at = DateTimeField(default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<DiseaseInfo {self.name}>"
