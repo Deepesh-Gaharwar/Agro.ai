@@ -131,15 +131,7 @@ const Login = () => {
             </button>
           </div>
         </form>
-
-        {/* Demo Credentials */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-md">
-          <h3 className="text-sm font-medium text-blue-800">Demo Credentials</h3>
-          <p className="mt-1 text-xs text-blue-600">
-            Email: demo@crophealth.com<br />
-            Password: demo123
-          </p>
-        </div>
+        
       </div>
     </div>
   );

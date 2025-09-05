@@ -1,0 +1,16 @@
+Flask==2.3.3
+Flask-SQLAlchemy==3.0.5
+Flask-CORS==4.0.0
+Flask-JWT-Extended==4.5.3
+Werkzeug==2.3.7
+ultralytics==8.0.196
+opencv-python==4.8.1.78
+Pillow==10.0.1
+numpy==1.24.3
+torch==2.0.1
+torchvision==0.15.2
+python-dotenv==1.0.0
+requests==2.31.0
+SQLAlchemy==2.0.21
+bcrypt==4.0.1
+python-multipart==0.0.6

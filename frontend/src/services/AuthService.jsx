@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.REACT_APP_API_URL || 'http://localhost:5000/api';
+// Fix: Added .env to the import
+const API_BASE_URL = import.meta.env.VITE_BASE_URL ;
 
 class AuthService {
   constructor() {

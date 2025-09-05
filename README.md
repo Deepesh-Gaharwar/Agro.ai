@@ -39,7 +39,7 @@ The **AI-Powered Crop Health Management System** is designed to assist farmers a
    ```
 3. **Run the Frontend**:
    ```bash
-   cd frontend && npm start
+   cd frontend && npm run dev
    ```
 4. **Train YOLO Model**:
    ```bash

@@ -42,6 +42,16 @@ const PublicRoute = ({ children }) => {
 };
 
 const AppContent = () => {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="loading-spinner"></div>
+      </div>
+    );
+  }
+
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
@@ -65,7 +75,7 @@ const AppContent = () => {
                 </PublicRoute>
               } 
             />
-            
+
             {/* Protected Routes */}
             <Route 
               path="/dashboard" 
@@ -99,15 +109,24 @@ const AppContent = () => {
                 </ProtectedRoute>
               } 
             />
-            
+
             {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" />} />
+            <Route
+              path="/"
+              element={
+                <Navigate
+                  to={isAuthenticated ? "/dashboard" : "/login"}
+                  replace
+                />
+              }
+            />
           </Routes>
         </main>
       </div>
     </Router>
   );
 };
+
 
 const App = () => {
   return (
