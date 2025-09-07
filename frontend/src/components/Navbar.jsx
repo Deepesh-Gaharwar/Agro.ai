@@ -79,11 +79,12 @@ const Navbar = () => {
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-600 hover:text-red-600 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600 transition-colors shadow-sm"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span className="hidden sm:block">Logout</span>
+                  <span className="hidden sm:block font-medium">Logout</span>
                 </button>
+
               </div>
             ) : (
               <div className="flex items-center space-x-3">

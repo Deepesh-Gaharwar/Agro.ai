@@ -11,6 +11,7 @@ import History from './pages/History';
 import Profile from './pages/Profile';
 import './index.css';
 import Layout from "./components/Layout";
+import LandingPage from './components/LandingPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -73,6 +74,14 @@ const AppContent = () => {
             </PublicRoute>
           }
         />
+        <Route
+          path="/home"
+          element={
+            <PublicRoute>
+              <LandingPage />
+            </PublicRoute>
+          }
+        />
 
         {/* Protected Routes inside Layout */}
         <Route element={<Layout />}>
@@ -115,7 +124,7 @@ const AppContent = () => {
           path="/"
           element={
             <Navigate
-              to={isAuthenticated ? "/dashboard" : "/login"}
+              to={isAuthenticated ? "/dashboard" : "/home"}
               replace
             />
           }

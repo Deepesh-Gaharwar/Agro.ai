@@ -1,16 +1,18 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_BASE_URL ;
 
 class DetectionService {
   async detectDisease(imageFile) {
     try {
+      const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('file', imageFile);
 
       const response = await axios.post(`${API_BASE_URL}/detect`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -20,17 +22,25 @@ class DetectionService {
     }
   }
 
-  async detectDiseaseFromBase64(imageData) {
+   async detectDiseaseFromBase64(imageData) {
     try {
-      const response = await axios.post(`${API_BASE_URL}/detect`, {
-        image: imageData,
-      });
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_BASE_URL}/detect`,
+        { image: imageData },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.error || 'Detection failed');
     }
   }
+
 
   async getDetectionHistory(page = 1, perPage = 10) {
     try {

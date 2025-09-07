@@ -1,8 +1,18 @@
 from mongoengine import (
     Document, StringField, EmailField, BooleanField,
-    FloatField, DateTimeField, ReferenceField, ListField, CASCADE
+    FloatField, DateTimeField, ReferenceField, ListField, CASCADE,
+    EmbeddedDocument, EmbeddedDocumentField
 )
 from datetime import datetime
+
+# --------------------
+# User Settings (toggles)
+# --------------------
+class UserSettings(EmbeddedDocument):
+    notifications = BooleanField(default=True)
+    history = BooleanField(default=True)
+    analytics = BooleanField(default=True)
+
 
 # --------------------
 # User Model
@@ -16,8 +26,12 @@ class User(Document):
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
 
+    # ✅ Embedded settings
+    settings = EmbeddedDocumentField(UserSettings, default=UserSettings)
+
     def __repr__(self):
         return f"<User {self.username}>"
+
 
 # --------------------
 # Plant Model
@@ -34,6 +48,7 @@ class Plant(Document):
     def __repr__(self):
         return f"<Plant {self.name}>"
 
+
 # --------------------
 # Detection Model
 # --------------------
@@ -41,7 +56,7 @@ class Detection(Document):
     meta = {'collection': 'detections'}
     
     user = ReferenceField(User, reverse_delete_rule=CASCADE, required=True)
-    image_path = StringField(required=True, max_length=255)
+    image_url = StringField(required=True, max_length=500)  # ✅ store Cloudinary URL
     disease_detected = BooleanField(default=False)
     confidence_score = FloatField(default=0.0)
     disease_type = StringField(max_length=100)
@@ -51,6 +66,7 @@ class Detection(Document):
 
     def __repr__(self):
         return f"<Detection {self.id} - Disease: {self.disease_detected}>"
+
 
 # --------------------
 # DiseaseInfo Model

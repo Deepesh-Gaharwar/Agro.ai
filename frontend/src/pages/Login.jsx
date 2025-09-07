@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/useToast';
@@ -10,6 +11,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   
+  const navigate = useNavigate();
   const { login } = useAuth();
   const { addToast } = useToast();
 
@@ -26,6 +28,7 @@ const Login = () => {
     try {
       await login(email, password);
       addToast('Login successful!', 'success');
+      navigate("/dashboard");
     } catch (error) {
       addToast(error.message || 'Login failed', 'error');
     } finally {

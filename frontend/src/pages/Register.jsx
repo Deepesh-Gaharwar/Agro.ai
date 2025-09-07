@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/useToast';
@@ -12,6 +13,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   
+  const navigate = useNavigate();
   const { register } = useAuth();
   const { addToast } = useToast();
 
@@ -38,6 +40,7 @@ const Register = () => {
     try {
       await register(username, email, password);
       addToast('Registration successful!', 'success');
+      navigate("/login");
     } catch (error) {
       addToast(error.message || 'Registration failed', 'error');
     } finally {
