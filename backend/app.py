@@ -18,6 +18,9 @@ from dotenv import load_dotenv
 from urllib.parse import quote_plus
 import cloudinary
 import cloudinary.uploader
+from ultralytics import YOLO
+import google.generativeai as genai
+import threading
 
 
 # Load environment variables from .env file
@@ -36,8 +39,8 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Ensure the upload folder exists
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
+app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Initialize JWT and MongoDB
 jwt = JWTManager(app)
@@ -75,6 +78,27 @@ CORS(app, origins=["http://localhost:5173"])
 # Init YOLO detector
 # --------------------
 yolo_detector = YOLODetector()
+
+
+# ====================================================
+# 🌱 GLOBAL CONFIGURATION
+# ====================================================
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+# Load YOLO model once (global)
+YOLO_MODEL_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "../CNN_YOLO_MODEL/runs/detect/train2/weights/best.pt")
+)
+
+if not os.path.exists(YOLO_MODEL_PATH):
+    raise FileNotFoundError(f"❌ YOLO model not found at: {YOLO_MODEL_PATH}")
+
+print(f"✅ Loading YOLO model from: {YOLO_MODEL_PATH}")
+yolo_model = YOLO(YOLO_MODEL_PATH)
+print(f"✅ YOLO Model loaded successfully with {len(yolo_model.names)} classes")
+
+# Thread lock for safe model inference
+yolo_lock = threading.Lock()
 
 
 # --------------------
@@ -263,86 +287,212 @@ def delete_profile():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# --------------------
-# Detect Disease (with Cloudinary)
-# --------------------
+# ====================================================
+# 🌿 DETECTION ENDPOINT
+# ====================================================
 @app.route('/api/detect', methods=['POST'])
 @jwt_required()
 def detect_disease():
     filepath = None
     try:
+        print("\n=== 🚀 YOLO Detection Started ===")
+        
+        # ------------------------------
+        # 1️⃣ Validate user
+        # ------------------------------
         user_id = get_jwt_identity()
         user = User.objects(id=user_id).first()
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        # --- 1. Temporarily save the image to the local upload folder ---
-        if 'image' in request.json:
-            image_data = request.json['image']
-            if ',' in image_data:
-                image_data = image_data.split(',')[1]
-
+        # ------------------------------
+        # 2️⃣ Handle image upload and normalize
+        # ------------------------------
+        if request.is_json and 'image' in request.json:
+            image_data = request.json['image'].split(',')[1] if ',' in request.json['image'] else request.json['image']
             image_bytes = base64.b64decode(image_data)
-            image = Image.open(io.BytesIO(image_bytes))
-
-            filename = f"{uuid.uuid4()}.jpg"
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            image.save(filepath)
-
+            image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         elif 'file' in request.files:
             file = request.files['file']
             if file.filename == '':
                 return jsonify({'error': 'No file selected'}), 400
-
-            filename = secure_filename(file.filename)
-            filename = f"{uuid.uuid4()}_{filename}"
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
+            image = Image.open(file.stream).convert("RGB")
         else:
             return jsonify({'error': 'No image provided'}), 400
 
-        # Run YOLO detection on the local file
-        detection_result = yolo_detector.detect(filepath)
+        # ✅ Force uniform dimensions for YOLO
+        image = image.resize((640, 640))
+        
+        # Save a consistent temp JPG file
+        filename = f"{uuid.uuid4()}.jpg"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        image.save(filepath, format="JPEG", quality=95)
+        print(f"📂 Saved normalized image: {filepath}")
 
-        # --- 2. Upload the locally saved file to Cloudinary ---
+        # ------------------------------
+        # 3️⃣ Run YOLO detection
+        # ------------------------------
+        print("🧠 Running YOLO inference...")
+        results = yolo_model.predict(source=filepath, imgsz=640, conf=0.05, save=False, verbose=True)
+
+        detected_classes = []
+        confidences = []
+
+        for result in results:
+            if result.boxes is not None and len(result.boxes) > 0:
+                for box in result.boxes:
+                    cls_id = int(box.cls.item())
+                    conf = float(box.conf.item())
+                    class_name = yolo_model.names[cls_id]
+                    detected_classes.append(class_name)
+                    confidences.append(conf)
+
+        print(f"🎯 Detected classes: {detected_classes} with confidences: {confidences}")
+
+        # ------------------------------
+        # 4️⃣ Handle detection results
+        # ------------------------------
+        if not detected_classes:
+            detected_disease = "No disease found"
+            confidence = 0.0
+            explanation = "The plant appears healthy with no visible disease symptoms."
+        else:
+            top_idx = confidences.index(max(confidences))
+            detected_disease = detected_classes[top_idx]
+            confidence = round(confidences[top_idx], 3)
+
+            # ------------------------------
+            # 5️⃣ Generate Gemini AI explanation
+            # ------------------------------
+            print("🤖 Generating AI explanation...")
+            model_gemini = genai.GenerativeModel(model_name=os.getenv("GOOGLE_AI_MODEL", "gemini-2.5-flash"))
+            prompt = f"""
+            You are an expert plant pathologist.
+            Explain briefly:
+            Disease Name: {detected_disease}
+            Include: cause, symptoms, cure, prevention.
+            """
+            try:
+                ai_response = model_gemini.generate_content(prompt)
+                if hasattr(ai_response, "text") and ai_response.text:
+                    explanation = ai_response.text.strip()
+                else:
+                    explanation = "AI did not return any explanation."
+            except Exception as e:
+                explanation = f"Error generating explanation: {str(e)}"
+
+        # ------------------------------
+        # 6️⃣ Upload to Cloudinary
+        # ------------------------------
         upload_result = cloudinary.uploader.upload(filepath)
         image_url = upload_result.get('secure_url')
 
-        if not image_url:
-            raise Exception("Cloudinary upload failed")
-
-        # --- 3. Remove the temporary local file after successful upload ---
+        # Cleanup
         if os.path.exists(filepath):
             os.remove(filepath)
 
-        # --- 4. Save the Cloudinary URL to MongoDB ---
+        # ------------------------------
+        # 7️⃣ Save to DB
+        # ------------------------------
         detection = Detection(
             user=user,
-            image_url=image_url,  # Store the Cloudinary URL
-            disease_detected=detection_result['disease_detected'],
-            confidence_score=detection_result['confidence'],
-            disease_type=detection_result.get('disease_type'),
-            severity_level=detection_result.get('severity_level'),
-            treatment_recommendation=detection_result.get('treatment_recommendation')
+            image_url=image_url,
+            disease_detected=detected_disease,
+            confidence_score=confidence,
+            disease_type="Leaf Disease" if detected_disease != "No disease found" else "Healthy",
+            severity_level="High" if confidence > 0.8 else ("Moderate" if confidence > 0.5 else "Low"),
+            treatment_recommendation=explanation
         )
         detection.save()
 
+        # ------------------------------
+        # 8️⃣ Respond
+        # ------------------------------
+        print("✅ YOLO Detection Completed Successfully!")
         return jsonify({
             'detection_id': str(detection.id),
-            'disease_detected': detection_result['disease_detected'],
-            'confidence': detection_result['confidence'],
-            'disease_type': detection_result.get('disease_type'),
-            'severity_level': detection_result.get('severity_level'),
-            'treatment_recommendation': detection_result.get('treatment_recommendation'),
+            'disease_detected': detected_disease if detected_disease != "No disease found" else None,
+            'confidence': confidence,
+            'severity_level': detection.severity_level,
+            'ai_explanation': explanation,
+            'image_url': image_url,
             'timestamp': detection.created_at.isoformat()
         }), 200
 
     except Exception as e:
-        # Clean up the local file if an error occurs after saving it
+        import traceback
+        print("❌ DETECTION ERROR:", traceback.format_exc())
         if filepath and os.path.exists(filepath):
             os.remove(filepath)
         return jsonify({'error': str(e)}), 500
+    
+import uuid as _uuid
+# import json
+
+@app.route('/api/debug_detect', methods=['POST'])
+def debug_detect():
+    """
+    Accepts multipart form file 'file'. Returns JSON with raw YOLO boxes,
+    class names, confidences and a link to an annotated image saved in uploads.
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'Send file as form field "file"'}), 400
+
+        f = request.files['file']
+        temp_name = f"{_uuid.uuid4()}_{secure_filename(f.filename)}"
+        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_name)
+        f.save(temp_path)
+
+        # ensure RGB and jpeg
+        with Image.open(temp_path) as im:
+            im = im.convert('RGB')
+            im.save(temp_path, format='JPEG', quality=95)
+
+        # run model with low conf and verbose info
+        res = yolo_model.predict(source=temp_path, imgsz=640, conf=0.1, save=False, verbose=False)
+
+        out = []
+        for r in res:
+            boxes = []
+            for b in r.boxes:
+                try:
+                    cls_id = int(b.cls.item())
+                    conf = float(b.conf.item())
+                    xyxy = b.xyxy.tolist() if hasattr(b, 'xyxy') else None
+                except Exception:
+                    # fallback if structure differs
+                    cls_id = int(b.cls)
+                    conf = float(b.conf)
+                    xyxy = None
+                name = yolo_model.names[cls_id] if cls_id in yolo_model.names else yolo_model.names.get(cls_id, str(cls_id))
+                boxes.append({'cls_id': cls_id, 'class_name': name, 'conf': conf, 'xyxy': xyxy})
+            out.append({'boxes': boxes})
+
+        # save annotated image produced by results.render() if available
+        try:
+            img_annotated = res[0].plot()  # returns numpy array with boxes drawn (ultralytics 8+)
+            ann_path = os.path.join(app.config['UPLOAD_FOLDER'], f"debug_{_uuid.uuid4()}.jpg")
+            from PIL import Image as PILImage
+            PILImage.fromarray(img_annotated).save(ann_path, format='JPEG', quality=90)
+            annotated_url = ann_path
+        except Exception as e:
+            annotated_url = None
+            print("Could not create annotated image:", e)
+
+        # cleanup temp input file
+        try:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+        except Exception:
+            pass
+
+        return jsonify({'result': out, 'annotated_image_path': annotated_url, 'model_classes': yolo_model.names}), 200
+
+    except Exception as e:
+        import traceback
+        print("DEBUG ERROR", traceback.format_exc())
+        return jsonify({'error': str(e)}), 500    
 
 
 @app.route('/api/history', methods=['GET'])

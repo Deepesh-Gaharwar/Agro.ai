@@ -23,7 +23,7 @@ The **AI-Powered Crop Health Management System** is designed to assist farmers a
 
 # Technology Stack
 - **Frontend**: React.js, JavaScript, Tailwind CSS, Axios
-- **Backend**: Python, Flask, SQLAlchemy
+- **Backend**: Python, Flask, MongoDb
 - **Machine Learning**: YOLOv8 for object detection
 
 # Usage
