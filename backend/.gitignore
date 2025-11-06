@@ -14,3 +14,16 @@ venv/
 Thumbs.db
 
 .env
+
+# ML models and cache files
+*.pt
+*.pth
+*.weights
+*.onnx
+*.cache
+__pycache__/
+*.log
+*.tmp
+data/train/
+data/val/
+
