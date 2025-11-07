@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/useToast";
 import { Leaf, Mail, Lock, User, Eye, EyeOff, AlertCircle } from "lucide-react";
+import Footer from "../components/Footer";
 
 const Register = () => {
   const [username, setUsername] = useState("");
@@ -66,6 +67,19 @@ const Register = () => {
   };
 
   return (
+    <>
+     <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
+          <div className="max-w-7xl mx-auto flex items-center justify-start px-6 py-4">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Leaf className="h-5 w-5 text-green-600" />
+              </div>
+              <span className="text-xl font-bold text-gray-900">
+                CropHealth AI
+              </span>
+            </div>
+          </div>
+        </header>
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
@@ -231,6 +245,9 @@ const Register = () => {
         </form>
       </div>
     </div>
+    <Footer/>
+    </>
+   
   );
 };
 

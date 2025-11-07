@@ -1,10 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Leaf } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Header = () => {
-  return (
+  const navigate = useNavigate()
+  const handleSignIn = () => {
+    navigate("/login")
+  }
+    return (
     <motion.nav 
       initial={{ opacity: 0, y: -50 }}
       animate={{ opacity: 1, y: 0 }}
@@ -28,12 +32,12 @@ const Header = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <button className="text-gray-600 hover:text-green-600 transition-colors">Sign In</button>
-            <button className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-2 rounded-lg hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105">
-              <Link to="/login">
+            <button onClick={handleSignIn} className="text-gray-600 hover:text-green-600 transition-colors">Sign In</button>
+            <Link className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-2 rounded-lg hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105">
+              <Link to="/register">
                    Get Started
               </Link>
-            </button>
+            </Link>
           </div>
         </div>
       </div>
