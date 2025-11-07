@@ -21,6 +21,8 @@ import cloudinary.uploader
 from ultralytics import YOLO
 import google.generativeai as genai
 import threading
+from mongoengine.errors import NotUniqueError, ValidationError
+import re
 
 
 # Load environment variables from .env file
@@ -101,24 +103,43 @@ print(f"✅ YOLO Model loaded successfully with {len(yolo_model.names)} classes"
 yolo_lock = threading.Lock()
 
 
-# --------------------
-# Routes
-# --------------------
+
 @app.route('/api/register', methods=['POST'])
 def register():
     try:
-        data = request.get_json()
+        data = request.get_json(force=True)
 
-        if User.objects(email=data['email']).first():
-            return jsonify({'error': 'Email already registered'}), 400
+        # --- Basic Validation ---
+        required_fields = ['username', 'email', 'password']
+        missing_fields = [f for f in required_fields if f not in data or not data[f].strip()]
+        if missing_fields:
+            return jsonify({'error': f"Missing fields: {', '.join(missing_fields)}"}), 400
 
+        username = data['username'].strip()
+        email = data['email'].strip().lower()
+        password = data['password'].strip()
+
+        # --- Email format validation ---
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            return jsonify({'error': 'Invalid email format'}), 400
+
+        # --- Password validation ---
+        if len(password) < 6:
+            return jsonify({'error': 'Password must be at least 6 characters long'}), 400
+
+        # --- Check if email already registered ---
+        if User.objects(email=email).first():
+            return jsonify({'error': 'Email is already registered'}), 400
+
+        # --- Create User ---
         user = User(
-            username=data['username'],
-            email=data['email'],
-            password_hash=generate_password_hash(data['password'])
+            username=username,
+            email=email,
+            password_hash=generate_password_hash(password)
         )
         user.save()
 
+        # --- Generate JWT ---
         access_token = create_access_token(identity=str(user.id))
 
         return jsonify({
@@ -131,8 +152,16 @@ def register():
             }
         }), 201
 
+    except NotUniqueError:
+        return jsonify({'error': 'Email already exists'}), 400
+
+    except ValidationError as ve:
+        return jsonify({'error': f'Validation Error: {str(ve)}'}), 400
+
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print("Registration error:", str(e))
+        return jsonify({'error': 'Internal server error. Please try again later.'}), 500
+
 
 
 @app.route('/api/login', methods=['POST'])

@@ -15,21 +15,42 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(authService.getCurrentUser());
   const [loading, setLoading] = useState(true);
 
+  // ✅ Initialize user from localStorage on mount
   useEffect(() => {
-    setUser(authService.getCurrentUser());
+    const existingUser = authService.getCurrentUser();
+    if (existingUser) {
+      setUser(existingUser);
+    }
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
+// src/contexts/AuthContext.jsx
+const login = async (email, password) => {
+  try {
     const { user } = await authService.login(email, password);
     setUser(user);
-  };
+    return user;
+  } catch (error) {
+    console.error("Login error:", error);
+    throw error; // ✅ rethrow it so frontend can handle
+  }
+};
 
-  const register = async (username, email, password) => {
-     await authService.register(username, email, password);
-    
-  };
+// AuthContext.jsx
+const register = async (username, email, password) => {
+  try {
+    const { user } = await authService.register(username, email, password);
+    setUser(user);
+    return user;
+  } catch (error) {
+    console.error("Registration error:", error);
+    throw error; // 👈 important
+  }
+};
 
+
+
+  // ✅ Logout and clear all session data
   const logout = () => {
     authService.logout();
     setUser(null);
@@ -44,5 +65,9 @@ export const AuthProvider = ({ children }) => {
     logout,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 };
