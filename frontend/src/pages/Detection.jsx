@@ -19,6 +19,7 @@ import {
 const Detection = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [diseaseName, setDiseaseName] = useState(null);
   const [detecting, setDetecting] = useState(false);
   const [result, setResult] = useState(null);
   const fileInputRef = useRef(null);
@@ -54,46 +55,6 @@ const Detection = () => {
     setImagePreview(null);
     setResult(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const detectDisease = async () => {
-    if (!selectedImage) {
-      addToast("Please select an image first", "error");
-      return;
-    }
-
-    setDetecting(true);
-    try {
-      const detectionResult = await detectionService.detectDisease(
-        selectedImage
-      );
-      setResult(detectionResult);
-     // console.log(detectionResult.disease_detected);
-
-
-      if (detectionResult.disease_detected) {
-        addToast("Disease detected! Check the results below.", "warning");
-      } else {
-        addToast("Great! No disease detected in this plant.", "success");
-      }
-    } catch (error) {
-      addToast(error.message || "Detection failed", "error");
-    } finally {
-      setDetecting(false);
-    }
-  };
-
-  const getSeverityColor = (severity) => {
-    switch (severity?.toLowerCase()) {
-      case "low":
-        return "bg-emerald-100 text-emerald-800 border-emerald-200";
-      case "moderate":
-        return "bg-amber-100 text-amber-800 border-amber-200";
-      case "high":
-        return "bg-rose-100 text-rose-800 border-rose-200";
-      default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
-    }
   };
 
   const parseMarkdown = (text) => {
@@ -148,17 +109,57 @@ const Detection = () => {
     return `<div class="space-y-2">${html}</div>`;
   };
 
+  const detectDisease = async () => {
+    if (!selectedImage) {
+      addToast("Please select an image first", "error");
+      return;
+    }
+
+    setDetecting(true);
+    try {
+      const detectionResult = await detectionService.detectDisease(
+        selectedImage
+      );
+      setResult(detectionResult);
+      setDiseaseName(detectionResult.disease_detected);
+      // console.log(diseaseName);
+      // console.log(diseaseTranslations[diseaseName]);
+      // console.log(detectionResult);
+      // console.log(diseaseTranslations[result.disease_detected.replace(/_+/g, " ").trim()]);
+
+      if (detectionResult.disease_detected) {
+        addToast("Disease detected! Check the results below.", "warning");
+      } else {
+        addToast("Great! No disease detected in this plant.", "success");
+      }
+    } catch (error) {
+      addToast(error.message || "Detection failed", "error");
+    } finally {
+      setDetecting(false);
+    }
+  };
+
+  const getSeverityColor = (severity) => {
+    switch (severity?.toLowerCase()) {
+      case "low":
+        return "bg-emerald-100 text-emerald-800 border-emerald-200";
+      case "moderate":
+        return "bg-amber-100 text-amber-800 border-amber-200";
+      case "high":
+        return "bg-rose-100 text-rose-800 border-rose-200";
+      default:
+        return "bg-gray-100 text-gray-700 border-gray-200";
+    }
+  };
+
   const normalizeDiseaseName = (name) => {
     if (!name) return "";
     return name
-      .replace(/_+/g, "_")        // normalize multiple underscores
-      .replace(/\s+/g, "_")       // normalize spaces to underscores
-      .replace(/[()]/g, "")       // remove brackets
+      .replace(/_+/g, "_") // normalize multiple underscores
+      .replace(/\s+/g, "_") // normalize spaces to underscores
+      .replace(/[()]/g, "") // remove brackets
       .trim();
   };
-
-
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 py-8 px-4">
@@ -405,16 +406,19 @@ const Detection = () => {
               {/* Disease Name Box */}
               {result && (
                 <div className="bg-white rounded-xl p-4 border border-gray-200">
+                  {" "}
                   <h4 className="text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
-                    Disease Name
-                  </h4>
-
+                    {" "}
+                    Disease Name{" "}
+                  </h4>{" "}
                   <p className="text-lg font-bold text-gray-900">
+                    {" "}
                     {result.translation?.lang === "hi"
-                      ? diseaseTranslations[result.disease_detected.replace(/_+/g, " ").trim()] ||
-                        "अज्ञात रोग"
-                      : result.disease_detected?.replace(/_+/g, " ").trim()}
-                  </p>
+                      ? diseaseTranslations[diseaseName] || "अज्ञात रोग"
+                      : result.disease_detected
+                          ?.replace(/_+/g, " ")
+                          .trim()}{" "}
+                  </p>{" "}
                 </div>
               )}
 
