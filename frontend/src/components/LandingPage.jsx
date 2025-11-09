@@ -93,9 +93,11 @@ const LandingPage = () => {
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <button className="group bg-gradient-to-r from-green-600 to-green-700 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105 shadow-lg">
                   <Link to="/login">
-                       Start Free Detection
+                      Start Free Detection
+
+                      <ArrowRight className="inline h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Link>
-                  <ArrowRight className="inline h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
+
                 </button>
                 <button className="group flex items-center px-8 py-4 border border-gray-300 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-all">
                   <Play className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" />

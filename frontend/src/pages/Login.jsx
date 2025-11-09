@@ -33,8 +33,9 @@ const Login = () => {
 
     try {
       await login(email, password);
-      addToast("Login successful!", "success");
+     // addToast("Login successful!", "success");
       navigate("/dashboard");
+      
     } catch (error) {
       console.error("Login error:", error);
 

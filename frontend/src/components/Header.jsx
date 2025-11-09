@@ -4,11 +4,12 @@ import { Leaf } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const Header = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const handleSignIn = () => {
-    navigate("/login")
-  }
-    return (
+    navigate("/login");
+  };
+
+  return (
     <motion.nav 
       initial={{ opacity: 0, y: -50 }}
       animate={{ opacity: 1, y: 0 }}
@@ -17,26 +18,35 @@ const Header = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
+          {/* Logo */}
           <div className="flex items-center space-x-2">
             <div className="p-2 bg-green-100 rounded-lg">
               <Leaf className="h-6 w-6 text-green-600" />
             </div>
             <span className="text-xl font-bold text-gray-900">CropHealth AI</span>
           </div>
-          
+
+          {/* Links */}
           <div className="hidden md:flex items-center space-x-8">
             <a href="#features" className="text-gray-600 hover:text-green-600 transition-colors">Features</a>
             <a href="#how-it-works" className="text-gray-600 hover:text-green-600 transition-colors">How it Works</a>
             <a href="#testimonials" className="text-gray-600 hover:text-green-600 transition-colors">Reviews</a>
             <a href="#pricing" className="text-gray-600 hover:text-green-600 transition-colors">Pricing</a>
           </div>
-          
+
+          {/* Buttons */}
           <div className="flex items-center space-x-4">
-            <button onClick={handleSignIn} className="text-gray-600 hover:text-green-600 transition-colors">Sign In</button>
-            <Link className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-2 rounded-lg hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105">
-              <Link to="/register">
-                   Get Started
-              </Link>
+            <button
+              onClick={handleSignIn}
+              className="text-gray-600 hover:text-green-600 transition-colors cursor-pointer"
+            >
+              Sign In
+            </button>
+            <Link
+              to="/register"
+              className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-2 rounded-lg hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105"
+            >
+              Get Started
             </Link>
           </div>
         </div>

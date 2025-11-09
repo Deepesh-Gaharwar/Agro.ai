@@ -68,7 +68,8 @@ const Detection = () => {
         selectedImage
       );
       setResult(detectionResult);
-      console.log(result.disease_detected);
+     // console.log(detectionResult.disease_detected);
+
 
       if (detectionResult.disease_detected) {
         addToast("Disease detected! Check the results below.", "warning");
@@ -148,13 +149,13 @@ const Detection = () => {
   };
 
   const normalizeDiseaseName = (name) => {
-  if (!name) return "";
-  return name
-    .replace(/_+/g, "_")        // normalize multiple underscores
-    .replace(/\s+/g, "_")       // normalize spaces to underscores
-    .replace(/[()]/g, "")       // remove brackets
-    .trim();
-};
+    if (!name) return "";
+    return name
+      .replace(/_+/g, "_")        // normalize multiple underscores
+      .replace(/\s+/g, "_")       // normalize spaces to underscores
+      .replace(/[()]/g, "")       // remove brackets
+      .trim();
+  };
 
 
 
@@ -236,7 +237,7 @@ const Detection = () => {
               <div className="flex justify-center gap-4 flex-wrap">
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors font-medium shadow-md"
+                  className="flex items-center px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors font-medium shadow-md cursor-pointer"
                 >
                   <Upload className="h-5 w-5 mr-2" /> Choose Different Image
                 </button>
@@ -244,7 +245,7 @@ const Detection = () => {
                 <button
                   onClick={detectDisease}
                   disabled={detecting}
-                  className="flex items-center px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-md"
+                  className="flex items-center px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-md cursor-pointer"
                 >
                   {detecting ? (
                     <>
@@ -314,7 +315,7 @@ const Detection = () => {
                     setResult((prev) => ({ ...prev, translation: null }));
                   }
                 }}
-                className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+                className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer"
               >
                 {result.translation && result.translation.lang === "hi"
                   ? "Show in English"
