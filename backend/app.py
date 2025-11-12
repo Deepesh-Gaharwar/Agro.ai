@@ -23,6 +23,8 @@ import google.generativeai as genai
 import threading
 from mongoengine.errors import NotUniqueError, ValidationError
 import re
+from datetime import datetime
+
 
 
 # Load environment variables from .env file
@@ -162,8 +164,6 @@ def register():
         print("Registration error:", str(e))
         return jsonify({'error': 'Internal server error. Please try again later.'}), 500
 
-
-
 @app.route('/api/login', methods=['POST'])
 def login():
     try:
@@ -187,7 +187,6 @@ def login():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 # --------------------
 # GET Profile
@@ -454,6 +453,84 @@ def detect_disease():
         if filepath and os.path.exists(filepath):
             os.remove(filepath)
         return jsonify({'error': str(e)}), 500
+
+
+# ------------------------------
+# 🆕 NEW CHAT ENDPOINT
+# ------------------------------
+@app.route('/api/chat/disease', methods=['POST'])
+@jwt_required()
+def chat_about_disease():
+    try:
+        # ✅ Ensure Gemini is configured (safe even if called multiple times)
+        genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+        # ✅ Validate user
+        user_id = get_jwt_identity()
+        user = User.objects(id=user_id).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        # ✅ Parse input
+        data = request.get_json()
+        user_message = data.get('message', '').strip()
+        detection_id = data.get('detection_id')
+        chat_history = data.get('chat_history', [])
+
+        if not user_message:
+            return jsonify({'error': 'Message is required'}), 400
+
+        # ✅ Detection context
+        context = ""
+        if detection_id:
+            detection = Detection.objects(id=detection_id).first()
+            if detection:
+                context = f"""
+                Detection Info:
+                Disease: {detection.disease_detected}
+                Confidence: {detection.confidence_score * 100:.1f}%
+                Severity: {detection.severity_level}
+                Type: {detection.disease_type}
+                Recommendation: {detection.treatment_recommendation}
+                """
+
+        # ✅ Chat history limit
+        history_context = ""
+        if chat_history:
+            history_context = "\n\nRecent Chat:\n" + "\n".join(
+                [f"{msg.get('role', 'user').capitalize()}: {msg.get('content', '')}" for msg in chat_history[-5:]]
+            )
+
+        # ✅ Combine prompt
+        full_prompt = f"""
+        You are an expert plant pathologist assistant.
+        Be concise, helpful, and professional.
+        {context}
+        {history_context}
+
+        User: {user_message}
+        """
+
+        # ✅ Generate response
+        model_gemini = genai.GenerativeModel(model_name=os.getenv("GOOGLE_AI_MODEL", "gemini-2.5-flash"))
+        ai_response = model_gemini.generate_content(full_prompt)
+
+        if hasattr(ai_response, "text") and ai_response.text:
+            bot_reply = ai_response.text.strip()
+        else:
+            bot_reply = "I couldn’t generate a response. Please try again."
+
+        return jsonify({
+            'message': bot_reply,
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+
+    except Exception as e:
+        import traceback
+        print("❌ CHAT ERROR:", traceback.format_exc())
+        return jsonify({'error': 'Failed to process chat message', 'details': str(e)}), 500
+
+
     
 import uuid as _uuid
 # import json

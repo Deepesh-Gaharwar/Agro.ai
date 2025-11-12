@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_BASE_URL ;
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 class DetectionService {
   async detectDisease(imageFile) {
@@ -22,7 +22,7 @@ class DetectionService {
     }
   }
 
-   async detectDiseaseFromBase64(imageData) {
+  async detectDiseaseFromBase64(imageData) {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
@@ -40,7 +40,6 @@ class DetectionService {
       throw new Error(error.response?.data?.error || 'Detection failed');
     }
   }
-
 
   async getDetectionHistory(page = 1, perPage = 10) {
     try {
@@ -63,6 +62,58 @@ class DetectionService {
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.error || 'Failed to fetch stats');
+    }
+  }
+
+  // 🆕 NEW: Chat about disease
+  async chatAboutDisease({ detection_id, message, chat_history = [] }) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        "http://127.0.0.1:5000/api/chat/disease",
+        {
+          detection_id,
+          message,
+          chat_history: chat_history.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }))
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Chat error:', error);
+      throw new Error(
+        error.response?.data?.error || 
+        'Failed to send message. Please try again.'
+      );
+    }
+  }
+
+  // 🆕 OPTIONAL: Get chat history for a specific detection
+  async getChatHistory(detection_id) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `http://127.0.0.1:5000/api/chat/history/${detection_id}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch chat history:', error);
+      return { messages: [] };
     }
   }
 }
