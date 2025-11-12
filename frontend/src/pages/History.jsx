@@ -7,30 +7,57 @@ import {
   CheckCircle,
   Leaf,
   Activity,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useToast } from "../contexts/useToast";
-import { detectionService } from "../services/detectionService";
+import { detectionService } from "../services/DetectionService";
 import { translateText } from "../utils/translateText";
-import { diseaseTranslations } from "../utils/diseaseTranslations";
 
 const History = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  // ✅ Added for total counts
+  const [globalStats, setGlobalStats] = useState({ healthy: 0, diseased: 0 });
+
   const { addToast } = useToast();
 
   useEffect(() => {
-    fetchHistory();
-  }, []);
+    fetchHistory(currentPage);
+  }, [currentPage]);
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (page) => {
     setLoading(true);
     try {
-      const res = await detectionService.getDetectionHistory(1, 10);
+      const res = await detectionService.getDetectionHistory(page, 10);
       setHistory(res.history || []);
-      // console.log(res.history);
+      setTotal(res.total || 0);
+      setTotalPages(res.pages || 1);
       if (res.history?.length > 0)
-        setExpandedId(res.history[0].id || res.history[0]._id); // open first
+        setExpandedId(res.history[0].id || res.history[0]._id);
+
+      // ✅ Global count logic (runs once)
+      if (page === 1) {
+        let all = res.allHistory || [];
+        if (all.length === 0 && res.pages > 1) {
+          // fetch all pages only once to count total healthy/diseased
+          for (let i = 2; i <= res.pages; i++) {
+            const next = await detectionService.getDetectionHistory(i, 10);
+            if (next.history) all = [...all, ...next.history];
+          }
+        } else {
+          all = res.history;
+        }
+
+        const healthy = all.filter((h) => !h.disease_detected).length;
+        const diseased = all.filter((h) => h.disease_detected).length;
+        setGlobalStats({ healthy, diseased });
+      }
     } catch (err) {
       addToast(err.message || "Failed to fetch history", "error");
     } finally {
@@ -38,11 +65,15 @@ const History = () => {
     }
   };
 
+  const toggleAccordion = (id) =>
+    setExpandedId((prev) => (prev === id ? null : id));
+
   const getSeverityColor = (severity) => {
     switch (severity?.toLowerCase()) {
       case "low":
         return "bg-emerald-100 text-emerald-800 border-emerald-200";
       case "moderate":
+      case "medium":
         return "bg-amber-100 text-amber-800 border-amber-200";
       case "high":
         return "bg-rose-100 text-rose-800 border-rose-200";
@@ -54,13 +85,11 @@ const History = () => {
   const parseMarkdown = (text) => {
     if (!text) return "";
 
-    // Bold text between **word**
     let html = text.replace(
       /\*\*(.*?)\*\*/g,
       '<strong class="font-semibold text-gray-900">$1</strong>'
     );
 
-    // Headings like "Disease:" or "रोग:" or "**Disease Name:**"
     html = html.replace(
       /(?:^|\n)(?:\*\*)?(?:Disease Name|Disease|रोग|गंभीरता|लक्षण|कारण|उपचार|रोकथाम|विवरण|Prevention|Cure|Symptoms|Cause)(?:\*\*)?:/gi,
       (match) =>
@@ -70,49 +99,33 @@ const History = () => {
         )}</h3>`
     );
 
-    // Bullet points for "*", "-", "•"
     html = html.replace(
       /(?:\n|^)[\*\-\•]\s+(.*)/g,
       '<li class="ml-5 list-disc text-blue-900">$1</li>'
     );
-
-    // Nested bullets (extra indented)
     html = html.replace(
       /\n\s{4,}[\*\-\•]\s+(.*)/g,
       '<li class="ml-10 list-disc text-blue-900">$1</li>'
     );
-
-    // Numbered points
     html = html.replace(
       /(?:\n|^)\d+\.\s+(.*)/g,
       '<li class="ml-5 list-decimal">$1</li>'
     );
-
-    // Wrap bullet items with <ul>
     html = html.replace(
       /(<li.*?>[\s\S]*?<\/li>)/g,
       '<ul class="list-disc pl-6 space-y-1">$1</ul>'
     );
-
-    // Two newlines → paragraph break
     html = html.replace(/\n\n/g, '</p><p class="mb-3">');
-
-    // Single newline → <br/>
     html = html.replace(/\n/g, "<br/>");
 
     return `<div class="space-y-2">${html}</div>`;
   };
 
-  const toggleAccordion = (id) =>
-    setExpandedId((prev) => (prev === id ? null : id));
-
   const HistoryCard = ({ detection, expanded }) => {
     const [translation, setTranslation] = useState(null);
-    const [translating, setTranslating] = useState(false);
 
     const handleTranslate = async () => {
       if (!translation) {
-        setTranslating(true);
         try {
           const textToTranslate = `
 Disease: ${detection.disease_detected || "Healthy"}
@@ -125,21 +138,9 @@ Explanation: ${detection.ai_explanation || ""}
           addToast("Translated successfully!", "success");
         } catch {
           addToast("Translation failed. Try again.", "error");
-        } finally {
-          setTranslating(false);
         }
       } else setTranslation(null);
     };
-
-    const extractDiseaseName = (text) => {
-      if (!text) return null;
-      const match = text.match(/\*\*(?:Disease Name|Disease):\*\*\s*([^\*]+)/i);
-      return match ? match[1].trim() : null;
-    };
-
-    const diseaseNameFromText = extractDiseaseName(
-      detection.treatment_recommendation
-    );
 
     return (
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
@@ -171,7 +172,16 @@ Explanation: ${detection.ai_explanation || ""}
                   : "Healthy Plant"}
               </h3>
               <p className="text-sm text-gray-600">
-                {new Date(detection.timestamp).toLocaleString()}
+                  { new Date(detection.timestamp).toLocaleString("en-IN", {
+                      timeZone: "Asia/Kolkata",
+                      hour12: true,
+                      year: "numeric",
+                      month: "numeric",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "numeric",
+                      second: "numeric",
+                  })}
               </p>
             </div>
           </div>
@@ -206,18 +216,6 @@ Explanation: ${detection.ai_explanation || ""}
                   Detection Results
                 </h2>
               </div>
-
-              {/* <button
-                onClick={handleTranslate}
-                disabled={translating}
-                className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer"
-              >
-                {translation && translation.lang === "hi"
-                  ? "Show in English"
-                  : translating
-                  ? "Translating..."
-                  : "Translate to Hindi"}
-              </button> */}
             </div>
 
             {/* Summary Box */}
@@ -264,75 +262,14 @@ Explanation: ${detection.ai_explanation || ""}
 
             {/* Disease Info */}
             {detection.disease_detected && (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-                    <h4 className="text-sm font-semibold text-blue-900 mb-3 uppercase tracking-wide">
-                      Disease Type
-                    </h4>
-                    <p className="text-2xl font-bold text-blue-900">
-                      {translation?.lang === "hi"
-                        ? "पत्तियों की बीमारी"
-                        : detection.disease_type?.replace(/_/g, " ") ||
-                          "Leaf Disease"}
-                    </p>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-100">
-                    <h4 className="text-sm font-semibold text-purple-900 mb-3 uppercase tracking-wide">
-                      Severity Level
-                    </h4>
-                    <span
-                      className={`inline-flex items-center px-4 py-2 rounded-lg text-lg font-bold border-2 ${getSeverityColor(
-                        detection.severity_level
-                      )}`}
-                    >
-                      {translation?.lang === "hi"
-                        ? detection.severity_level === "Low"
-                          ? "कम"
-                          : detection.severity_level === "High"
-                          ? "उच्च"
-                          : "मध्यम"
-                        : detection.severity_level || "Unknown"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Disease Name */}
-                {/* <div className="bg-white rounded-xl p-4 border border-gray-200 mb-6">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
-                    Disease Name
-                  </h4>
-                  <p className="text-lg font-bold text-gray-900">
-                    {translation?.lang === "hi"
-                      ? diseaseTranslations[
-                          diseaseNameFromText
-                            ?.replace(/\s+/g, "_")
-                            ?.replace(/[()]/g, "")
-                            ?.trim()
-                        ] || "अज्ञात रोग"
-                      : diseaseNameFromText || "Unknown"}
-                  </p>
-                </div> */}
-
-              
-                {/* AI Explanation */}
-                {detection.treatment_recommendation && (
-                  <div
-                    className="text-blue-900 leading-relaxed space-y-3"
-                    dangerouslySetInnerHTML={{
-                      __html:
-                        translation?.lang === "hi"
-                          ? `<p class="mb-3">${parseMarkdown(
-                              translation.text
-                            )}</p>`
-                          : `<p class="mb-3">${parseMarkdown(
-                              detection.treatment_recommendation
-                            )}</p>`,
-                    }}
-                  />
-                )}
-              </>
+              <div
+                className="text-blue-900 leading-relaxed space-y-3"
+                dangerouslySetInnerHTML={{
+                  __html: `<p class="mb-3">${parseMarkdown(
+                    detection.treatment_recommendation
+                  )}</p>`,
+                }}
+              />
             )}
           </div>
         </div>
@@ -340,9 +277,63 @@ Explanation: ${detection.ai_explanation || ""}
     );
   };
 
+  const Pagination = () => (
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mt-6">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p className="text-sm text-gray-700">
+          Showing{" "}
+          <span className="font-bold text-green-600">
+            {Math.min((currentPage - 1) * 10 + 1, total)}
+          </span>{" "}
+          to{" "}
+          <span className="font-bold text-green-600">
+            {Math.min(currentPage * 10, total)}
+          </span>{" "}
+          of <span className="font-bold text-green-600">{total}</span> results
+        </p>
+
+        <nav className="flex items-center gap-2">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="w-10 h-10 rounded-lg border-2 border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-all flex items-center justify-center"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+
+          {[...Array(Math.min(5, totalPages))].map((_, i) => {
+            const page = i + 1;
+            const isCurrent = page === currentPage;
+            return (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`w-10 h-10 rounded-lg border-2 font-semibold transition-all ${
+                  isCurrent
+                    ? "bg-green-600 border-green-600 text-white shadow-lg scale-110"
+                    : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                {page}
+              </button>
+            );
+          })}
+
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="w-10 h-10 rounded-lg border-2 border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-all flex items-center justify-center"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </nav>
+      </div>
+    </div>
+  );
+
   if (loading)
     return (
-      <div className="min-h-screen flex justify-center items-center">
+      <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
         <div className="w-14 h-14 border-4 border-green-300 border-t-green-700 rounded-full animate-spin"></div>
       </div>
     );
@@ -363,42 +354,41 @@ Explanation: ${detection.ai_explanation || ""}
           </p>
         </div>
 
-        {/* Summary Stats */}
+        {/* ✅ Summary Stats (Global Counts) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 shadow-lg text-white">
             <Activity className="h-8 w-8 mb-3" />
-            <p className="text-4xl font-bold">{history.length}</p>
+            <p className="text-4xl font-bold">{total}</p>
             <p className="text-blue-100">Total Scans</p>
           </div>
 
           <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 shadow-lg text-white">
             <CheckCircle className="h-8 w-8 mb-3" />
-            <p className="text-4xl font-bold">
-              {history.filter((h) => !h.disease_detected).length}
-            </p>
+            <p className="text-4xl font-bold">{globalStats.healthy}</p>
             <p className="text-green-100">Healthy Plants</p>
           </div>
 
           <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl p-6 shadow-lg text-white">
             <AlertTriangle className="h-8 w-8 mb-3" />
-            <p className="text-4xl font-bold">
-              {history.filter((h) => h.disease_detected).length}
-            </p>
+            <p className="text-4xl font-bold">{globalStats.diseased}</p>
             <p className="text-red-100">Diseased Plants</p>
           </div>
         </div>
 
         {/* Accordion List */}
         {history.length > 0 ? (
-          <div className="space-y-6">
-            {history.map((d) => (
-              <HistoryCard
-                key={d.id || d._id}
-                detection={d}
-                expanded={expandedId === (d.id || d._id)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="space-y-6">
+              {history.map((d) => (
+                <HistoryCard
+                  key={d.id || d._id}
+                  detection={d}
+                  expanded={expandedId === (d.id || d._id)}
+                />
+              ))}
+            </div>
+            {totalPages > 1 && <Pagination />}
+          </>
         ) : (
           <div className="text-center bg-white rounded-2xl shadow-lg p-10 border">
             <p className="text-gray-700 font-medium">
