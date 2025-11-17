@@ -68,19 +68,19 @@ const History = () => {
   const toggleAccordion = (id) =>
     setExpandedId((prev) => (prev === id ? null : id));
 
-  const getSeverityColor = (severity) => {
-    switch (severity?.toLowerCase()) {
-      case "low":
-        return "bg-emerald-100 text-emerald-800 border-emerald-200";
-      case "moderate":
-      case "medium":
-        return "bg-amber-100 text-amber-800 border-amber-200";
-      case "high":
-        return "bg-rose-100 text-rose-800 border-rose-200";
-      default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
-    }
-  };
+  // const getSeverityColor = (severity) => {
+  //   switch (severity?.toLowerCase()) {
+  //     case "low":
+  //       return "bg-emerald-100 text-emerald-800 border-emerald-200";
+  //     case "moderate":
+  //     case "medium":
+  //       return "bg-amber-100 text-amber-800 border-amber-200";
+  //     case "high":
+  //       return "bg-rose-100 text-rose-800 border-rose-200";
+  //     default:
+  //       return "bg-gray-100 text-gray-700 border-gray-200";
+  //   }
+  // };
 
   const parseMarkdown = (text) => {
     if (!text) return "";
@@ -122,25 +122,7 @@ const History = () => {
   };
 
   const HistoryCard = ({ detection, expanded }) => {
-    const [translation, setTranslation] = useState(null);
-
-    const handleTranslate = async () => {
-      if (!translation) {
-        try {
-          const textToTranslate = `
-Disease: ${detection.disease_detected || "Healthy"}
-Severity: ${detection.severity_level || "Unknown"}
-Explanation: ${detection.ai_explanation || ""}
-          `;
-          addToast("Translating to Hindi...", "info");
-          const translated = await translateText(textToTranslate, "hi");
-          setTranslation({ text: translated, lang: "hi" });
-          addToast("Translated successfully!", "success");
-        } catch {
-          addToast("Translation failed. Try again.", "error");
-        }
-      } else setTranslation(null);
-    };
+    // console.log(detection);
 
     return (
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
@@ -172,16 +154,29 @@ Explanation: ${detection.ai_explanation || ""}
                   : "Healthy Plant"}
               </h3>
               <p className="text-sm text-gray-600">
-                  { new Date(detection.timestamp).toLocaleString("en-IN", {
-                      timeZone: "Asia/Kolkata",
-                      hour12: true,
-                      year: "numeric",
-                      month: "numeric",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "numeric",
-                      second: "numeric",
-                  })}
+                {(() => {
+                  // original timestamp from object
+                  let ts = detection.timestamp; // e.g. "2025-11-13T10:44:21.394000"
+
+                  // 1 trim microseconds to milliseconds if present
+                  ts = ts.replace(/\.(\d{3})\d+$/, ".$1");
+
+                  // 2 force UTC by adding Z if no timezone present
+                  if (!/[zZ]|[+\-]\d{2}:\d{2}$/.test(ts)) ts = ts + "Z";
+
+                  // 3 create Date and format in IST
+                  const dt = new Date(ts);
+                  return dt.toLocaleString("en-IN", {
+                    timeZone: "Asia/Kolkata",
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                    hour12: true,
+                  });
+                })()}
               </p>
             </div>
           </div>
