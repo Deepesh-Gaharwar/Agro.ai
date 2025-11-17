@@ -63,6 +63,8 @@ class Detection(Document):
     severity_level = StringField(max_length=50)  # Low, Medium, High
     treatment_recommendation = StringField()
     created_at = DateTimeField(default=datetime.utcnow)
+    plant_name = StringField(max_length=100)
+
 
     def __repr__(self):
         return f"<Detection {self.id} - Disease: {self.disease_detected}>"
