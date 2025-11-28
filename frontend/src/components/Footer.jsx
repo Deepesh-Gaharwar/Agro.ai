@@ -13,7 +13,7 @@ const Footer = () => {
                 <div className="p-2 bg-green-100 rounded-lg">
                   <Leaf className="h-6 w-6 text-green-600" />
                 </div>
-                <span className="text-xl font-bold">CropHealth AI</span>
+                <span className="text-xl font-bold">Agro.ai</span>
               </div>
               <p className="text-gray-400 leading-relaxed">
                 Revolutionizing agriculture with AI-powered disease detection and smart farming solutions for a sustainable future.
@@ -57,7 +57,7 @@ const Footer = () => {
               <ul className="space-y-3">
                 <li className="flex items-center">
                   <Mail className="h-4 w-4 mr-2 text-green-400" />
-                  <span className="text-gray-400">support@crophealth.ai</span>
+                  <span className="text-gray-400">support@Agro.ai </span>
                 </li>
                 <li className="flex items-center">
                   <Phone className="h-4 w-4 mr-2 text-green-400" />
@@ -76,7 +76,7 @@ const Footer = () => {
         <div className="py-6 border-t border-gray-800">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
-              © 2025 CropHealth AI. All rights reserved.
+              © 2025 Agro.ai . All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Privacy Policy</a>

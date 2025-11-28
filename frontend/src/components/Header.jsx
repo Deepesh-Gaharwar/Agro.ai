@@ -23,7 +23,7 @@ const Header = () => {
             <div className="p-2 bg-green-100 rounded-lg">
               <Leaf className="h-6 w-6 text-green-600" />
             </div>
-            <span className="text-xl font-bold text-gray-900">CropHealth AI</span>
+            <span className="text-xl font-bold text-gray-900">Agro.ai</span>
           </div>
 
           {/* Links */}

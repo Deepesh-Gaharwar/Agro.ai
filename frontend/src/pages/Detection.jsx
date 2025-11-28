@@ -134,7 +134,7 @@ const Detection = () => {
       );
       setResult(detectionResult);
       setDiseaseName(detectionResult.disease_detected);
-      console.log(detectionResult)
+     // console.log(detectionResult)
 
       if (detectionResult.disease_detected) {
         addToast("Disease detected! Check the results below.", "warning");

@@ -20,7 +20,7 @@ const Navbar = () => {
               <Leaf className="h-6 w-6 text-green-600" />
             </div>
             <span className="text-xl font-bold text-gray-900 tracking-tight">
-              CropHealth <span className="text-green-600">AI</span>
+              Agro.ai
             </span>
           </Link>
 

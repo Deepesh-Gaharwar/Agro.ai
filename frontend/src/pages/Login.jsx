@@ -62,7 +62,7 @@ const Login = () => {
             <Leaf className="h-5 w-5 text-green-600" />
           </div>
           <span className="text-xl font-bold text-gray-900">
-            CropHealth AI
+            Agro.ai
           </span>
         </div>
       </div>

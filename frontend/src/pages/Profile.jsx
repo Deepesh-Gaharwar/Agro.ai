@@ -217,7 +217,7 @@ export default function Profile() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 bg-white px-6 py-3 rounded-lg shadow-sm mb-4">
             <Leaf className="w-8 h-8 text-green-600" />
-            <h1 className="text-3xl font-bold text-gray-800">CropHealth AI Profile</h1>
+            <h1 className="text-3xl font-bold text-gray-800">Agro.ai Profile</h1>
           </div>
           <p className="text-gray-600">Manage your agricultural intelligence settings</p>
         </div>
@@ -231,7 +231,7 @@ export default function Profile() {
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-gray-800">Profile Information</h2>
-                <p className="text-gray-600 text-sm">Your CropHealthAI account details</p>
+                <p className="text-gray-600 text-sm">Your Agro.ai account details</p>
               </div>
             </div>
           </div>
@@ -333,7 +333,7 @@ export default function Profile() {
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-gray-800">Account Settings</h2>
-                <p className="text-gray-600 text-sm">Customize your CropHealthAI experience</p>
+                <p className="text-gray-600 text-sm">Customize your Agro.ai experience</p>
               </div>
             </div>
           </div>
@@ -391,7 +391,7 @@ export default function Profile() {
                 <Activity className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold">Your CropHealthAI Impact</h2>
+                <h2 className="text-xl font-semibold">Your Agro.ai Impact</h2>
                 <p className="text-green-100 text-sm">See how you're improving agriculture</p>
               </div>
             </div>

@@ -379,7 +379,7 @@ const LandingPage = () => {
                 role: "Rice Farmer, Punjab",
                 image: "👨‍🌾",
                 rating: 5,
-                text: "CropHealth AI saved my entire harvest! Early detection of bacterial blight helped me take immediate action. My yield increased by 30% this season."
+                text: "Agro.ai saved my entire harvest! Early detection of bacterial blight helped me take immediate action. My yield increased by 30% this season."
               },
               {
                 name: "Maria Santos",
